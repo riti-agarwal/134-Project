@@ -1,0 +1,32 @@
+[1.328s] Invoking command in '/home/robot/robotws/build/hebiros': PYTHONPATH=/home/robot/robotws/build/hebiros/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/hebiros/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/hebiros/build --no-deps symlink_data
+[1.631s] running develop
+[1.850s] running egg_info
+[1.850s] creating hebiros.egg-info
+[1.850s] writing hebiros.egg-info/PKG-INFO
+[1.851s] writing dependency_links to hebiros.egg-info/dependency_links.txt
+[1.851s] writing entry points to hebiros.egg-info/entry_points.txt
+[1.851s] writing requirements to hebiros.egg-info/requires.txt
+[1.851s] writing top-level names to hebiros.egg-info/top_level.txt
+[1.852s] writing manifest file 'hebiros.egg-info/SOURCES.txt'
+[1.854s] reading manifest file 'hebiros.egg-info/SOURCES.txt'
+[1.855s] writing manifest file 'hebiros.egg-info/SOURCES.txt'
+[1.856s] running build_ext
+[1.857s] Creating /home/robot/robotws/install/hebiros/lib/python3.10/site-packages/hebiros.egg-link (link to .)
+[1.857s] Installing hebiforce script to /home/robot/robotws/install/hebiros/lib/hebiros
+[1.858s] Installing hebinode script to /home/robot/robotws/install/hebiros/lib/hebiros
+[1.858s] Installing hebiscan script to /home/robot/robotws/install/hebiros/lib/hebiros
+[1.858s] Installing hebitune script to /home/robot/robotws/install/hebiros/lib/hebiros
+[1.858s] Installing testsend script to /home/robot/robotws/install/hebiros/lib/hebiros
+[1.858s] 
+[1.858s] Installed /home/robot/robotws/build/hebiros
+[1.858s] running symlink_data
+[1.858s] creating /home/robot/robotws/install/hebiros/share/ament_index
+[1.859s] creating /home/robot/robotws/install/hebiros/share/ament_index/resource_index
+[1.859s] creating /home/robot/robotws/install/hebiros/share/ament_index/resource_index/packages
+[1.859s] symbolically linking /home/robot/robotws/build/hebiros/resource/hebiros -> /home/robot/robotws/install/hebiros/share/ament_index/resource_index/packages
+[1.859s] symbolically linking /home/robot/robotws/build/hebiros/package.xml -> /home/robot/robotws/install/hebiros/share/hebiros
+[1.859s] creating /home/robot/robotws/install/hebiros/share/hebiros/params
+[1.859s] symbolically linking /home/robot/robotws/build/hebiros/params/hebitest.yaml -> /home/robot/robotws/install/hebiros/share/hebiros/params
+[1.859s] creating /home/robot/robotws/install/hebiros/share/hebiros/launch
+[1.859s] symbolically linking /home/robot/robotws/build/hebiros/launch/hebitest.launch.py -> /home/robot/robotws/install/hebiros/share/hebiros/launch
+[1.919s] Invoked command in '/home/robot/robotws/build/hebiros' returned '0': PYTHONPATH=/home/robot/robotws/build/hebiros/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/hebiros/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/hebiros/build --no-deps symlink_data

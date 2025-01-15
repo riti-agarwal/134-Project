@@ -1,0 +1,17 @@
+[0.975s] Invoking command in '/home/robot/robotws/build/demo134': PYTHONPATH=/home/robot/robotws/build/demo134/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/demo134/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/demo134/build --no-deps symlink_data
+[1.259s] running develop
+[1.466s] running egg_info
+[1.467s] writing demo134.egg-info/PKG-INFO
+[1.467s] writing dependency_links to demo134.egg-info/dependency_links.txt
+[1.467s] writing entry points to demo134.egg-info/entry_points.txt
+[1.475s] writing requirements to demo134.egg-info/requires.txt
+[1.475s] writing top-level names to demo134.egg-info/top_level.txt
+[1.477s] reading manifest file 'demo134.egg-info/SOURCES.txt'
+[1.478s] writing manifest file 'demo134.egg-info/SOURCES.txt'
+[1.480s] running build_ext
+[1.480s] Creating /home/robot/robotws/install/demo134/lib/python3.10/site-packages/demo134.egg-link (link to .)
+[1.481s] Installing demo134 script to /home/robot/robotws/install/demo134/lib/demo134
+[1.481s] 
+[1.481s] Installed /home/robot/robotws/build/demo134
+[1.481s] running symlink_data
+[1.520s] Invoked command in '/home/robot/robotws/build/demo134' returned '0': PYTHONPATH=/home/robot/robotws/build/demo134/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/demo134/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/demo134/build --no-deps symlink_data

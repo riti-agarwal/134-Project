@@ -1,0 +1,21 @@
+[1.429s] Invoking command in '/home/robot/robotws/build/hebiros': PYTHONPATH=/home/robot/robotws/build/hebiros/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/hebiros/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/hebiros/build --no-deps symlink_data
+[1.929s] running develop
+[2.303s] running egg_info
+[2.303s] writing hebiros.egg-info/PKG-INFO
+[2.304s] writing dependency_links to hebiros.egg-info/dependency_links.txt
+[2.304s] writing entry points to hebiros.egg-info/entry_points.txt
+[2.304s] writing requirements to hebiros.egg-info/requires.txt
+[2.304s] writing top-level names to hebiros.egg-info/top_level.txt
+[2.307s] reading manifest file 'hebiros.egg-info/SOURCES.txt'
+[2.308s] writing manifest file 'hebiros.egg-info/SOURCES.txt'
+[2.310s] running build_ext
+[2.310s] Creating /home/robot/robotws/install/hebiros/lib/python3.10/site-packages/hebiros.egg-link (link to .)
+[2.311s] Installing hebiforce script to /home/robot/robotws/install/hebiros/lib/hebiros
+[2.311s] Installing hebinode script to /home/robot/robotws/install/hebiros/lib/hebiros
+[2.311s] Installing hebiscan script to /home/robot/robotws/install/hebiros/lib/hebiros
+[2.313s] Installing hebitune script to /home/robot/robotws/install/hebiros/lib/hebiros
+[2.313s] Installing testsend script to /home/robot/robotws/install/hebiros/lib/hebiros
+[2.313s] 
+[2.313s] Installed /home/robot/robotws/build/hebiros
+[2.313s] running symlink_data
+[2.347s] Invoked command in '/home/robot/robotws/build/hebiros' returned '0': PYTHONPATH=/home/robot/robotws/build/hebiros/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/hebiros/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/hebiros/build --no-deps symlink_data

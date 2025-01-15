@@ -1,0 +1,26 @@
+[1.342s] Invoking command in '/home/robot/robotws/build/demo134': PYTHONPATH=/home/robot/robotws/build/demo134/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/demo134/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/demo134/build --no-deps symlink_data
+[1.642s] running develop
+[1.860s] running egg_info
+[1.860s] creating demo134.egg-info
+[1.860s] writing demo134.egg-info/PKG-INFO
+[1.860s] writing dependency_links to demo134.egg-info/dependency_links.txt
+[1.860s] writing entry points to demo134.egg-info/entry_points.txt
+[1.860s] writing requirements to demo134.egg-info/requires.txt
+[1.861s] writing top-level names to demo134.egg-info/top_level.txt
+[1.861s] writing manifest file 'demo134.egg-info/SOURCES.txt'
+[1.862s] reading manifest file 'demo134.egg-info/SOURCES.txt'
+[1.863s] writing manifest file 'demo134.egg-info/SOURCES.txt'
+[1.864s] running build_ext
+[1.864s] Creating /home/robot/robotws/install/demo134/lib/python3.10/site-packages/demo134.egg-link (link to .)
+[1.865s] Installing demo134 script to /home/robot/robotws/install/demo134/lib/demo134
+[1.865s] 
+[1.865s] Installed /home/robot/robotws/build/demo134
+[1.865s] running symlink_data
+[1.865s] creating /home/robot/robotws/install/demo134/share/ament_index
+[1.866s] creating /home/robot/robotws/install/demo134/share/ament_index/resource_index
+[1.866s] creating /home/robot/robotws/install/demo134/share/ament_index/resource_index/packages
+[1.866s] symbolically linking /home/robot/robotws/build/demo134/resource/demo134 -> /home/robot/robotws/install/demo134/share/ament_index/resource_index/packages
+[1.866s] symbolically linking /home/robot/robotws/build/demo134/package.xml -> /home/robot/robotws/install/demo134/share/demo134
+[1.866s] creating /home/robot/robotws/install/demo134/share/demo134/launch
+[1.866s] symbolically linking /home/robot/robotws/build/demo134/launch/demo134.launch.py -> /home/robot/robotws/install/demo134/share/demo134/launch
+[1.897s] Invoked command in '/home/robot/robotws/build/demo134' returned '0': PYTHONPATH=/home/robot/robotws/build/demo134/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/robot/robotws/install/demo134/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/robot/robotws/build/demo134/build --no-deps symlink_data
