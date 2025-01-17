@@ -96,6 +96,36 @@ class DemoNode(Node):
         # print(list(fbkmsg.position))
         pass
 
+    def quintic_spline(self, q0, qT, T, t):
+        """
+        Compute the position, velocity, and acceleration using a quintic spline.
+        - param q0: Vector of initial positions
+        - param qT: Vector of final positions
+        - param T:  Total time for the motion
+        - param t:  Current time
+        - return: Vector: positions, Vector: velocities, Vector: accelerations 
+        """
+        positions, velocities, accelerations = [], [], []
+    
+        for i in range(len(q0)):
+            a0 = q0[i]
+            a1 = 0.0
+            a2 = 0.0
+            a3 = (20 * (qT[i] - q0[i]) - (8 * 0.0 + 12 * 0.0) * T - (3 * 0.0 - 0.0) * T**2) / (2 * T**3)
+            a4 = (-30 * (qT[i] - q0[i]) + (14 * 0.0 + 16 * 0.0) * T + (3 * 0.0 - 2 * 0.0) * T**2) / (2 * T**4)
+            a5 = (12 * (qT[i] - q0[i]) - (6 * 0.0 + 6 * 0.0) * T - (0.0 - 0.0) * T**2) / (2 * T**5)
+    
+            position = a0 + a1 * t + a2 * t**2 + a3 * t**3 + a4 * t**4 + a5 * t**5
+            velocity = a1 + 2 * a2 * t + 3 * a3 * t**2 + 4 * a4 * t**3 + 5 * a5 * t**4
+            acceleration = 2 * a2 + 6 * a3 * t + 12 * a4 * t**2 + 20 * a5 * t**3
+    
+            positions.append(position)
+            velocities.append(velocity)
+            accelerations.append(acceleration)
+    
+        return positions, velocities, accelerations
+
+
     # Timer (100Hz) update.
     def update(self):
         # Grab the current time.
@@ -107,6 +137,11 @@ class DemoNode(Node):
             qd = [(1 - progress) * p0 for p0 in self.position0]
             qddot = [0.0, 0.0, 0.0]
             self.sendcmd(qd, qddot)
+
+            # code to use the quintic spline instead of linear interpolation
+            # T = self.homing_time
+            # qd, qddot, qddotdot = self.quintic_spline(self.position0, [0.0, 0.0, 0.0], T, t)
+            # self.sendcmd(qd, qddot)
 
             if progress >= 1.0:
             # if t + dt >= 1.0
