@@ -47,7 +47,7 @@ class DemoNode(Node):
         # Create a timer to keep calculating/sending commands.
         rate           = RATE
         self.current_phase = "homing"
-        self.homing_time = 2.0
+        # self.homing_time = 2.0
         # self.homed = False
         self.starttime = self.get_clock().now()
         self.timer     = self.create_timer(1/rate, self.update)
@@ -96,6 +96,44 @@ class DemoNode(Node):
         # print(list(fbkmsg.position))
         pass
 
+    def ikin(self, x, y, z):
+        """Compute joint angles from cartesian coordinates"""
+        r = np.sqrt(x**2 + y**2)
+        d = z
+        theta1 = np.arctan2(y, x)
+        D = np.sqrt(r**2 + d**2)
+        if D > (L1 + L2) or D < abs(L1 - L2):
+            raise ValueError("Target out of reach")
+
+        angle_a = np.arctan2(d, r)
+        angle_b = np.arccos((L1**2 + D**2 - L2**2) / (2 * L1 * D))
+        theta2 = angle_a + angle_b
+
+        angle_c = np.arccos((L1**2 + L2**2 - D**2) / (2 * L1 * L2))
+        theta3 = np.pi - angle_c
+
+        return [theta1, theta2, theta3]
+
+    def move_with_spline(self, q_start, q_end, duration):
+        """Move between two joint positions using quintic spline."""
+        t_start = self.get_clock().now()
+        t_now = self.get_clock().now()
+        elapsed = (t_now - t_start).nanoseconds * 1e-9
+
+        while elapsed < duration:
+            t_now = self.get_clock().now()
+            elapsed = (t_now - t_start).nanoseconds * 1e-9
+            pos, vel, _ = self.quintic_spline(q_start, q_end, duration, elapsed)
+            self.sendcmd(pos, vel)
+            rclpy.spin_once(self)
+
+    def move_to_waiting_state(self):
+        # TODO
+        """Move robot to the waiting state using quintic spline."""
+        current_pos = [0.0, 0.0, 0.0]  # get last computed join angles or get current joint angles
+        waiting_pos = [0.0, 0.0, np.pi / 2]  # We should change this once we know the exact position of our waiting state
+        self.move_with_spline(current_pos, waiting_pos, 2.0)  # 2-second duration
+
     def quintic_spline(self, q0, qT, T, t):
         """
         Compute the position, velocity, and acceleration using a quintic spline.
@@ -125,38 +163,64 @@ class DemoNode(Node):
     
         return positions, velocities, accelerations
 
+    def move_to_target(self, x, y, z):
+        # TODO: Fix Step 1: We move from the current position to the intermediate angle right? When are we ever at 0, 0, 0?
+        """Move robot to a target point on the table using quintic spline."""
+        try:
+            joint_angles = self.ikin(x, y, z)
 
-    # Timer (100Hz) update.
-    def update(self):
-        # Grab the current time.
-        now = self.get_clock().now()
-        t   = (now - self.starttime).nanoseconds * 1e-9
+            # Step 1: Move upper arm vertical
+            # TODO
+            intermediate_angles = [joint_angles[0], 0.0, 0.0]  # We need to change the third motor angles so that it matches the current / last given angle. 
+            self.move_with_spline([0.0, 0.0, 0.0], intermediate_angles, 2.0)
 
-        if self.current_phase == "homing":
-            progress = min(t / self.homing_time, 1.0)  
-            qd = [(1 - progress) * p0 for p0 in self.position0]
-            qddot = [0.0, 0.0, 0.0]
-            self.sendcmd(qd, qddot)
+            # Step 2: Move to the target
+            self.move_with_spline(intermediate_angles, joint_angles, 2.0)
+        except ValueError as e:
+            self.get_logger().error(str(e))
 
-            # code to use the quintic spline instead of linear interpolation
-            # T = self.homing_time
-            # qd, qddot, qddotdot = self.quintic_spline(self.position0, [0.0, 0.0, 0.0], T, t)
-            # self.sendcmd(qd, qddot)
+    def update(self, x_coord, y_coord, z_coord=0):
+        """Main update loop."""
+        if self.current_phase == "waiting":
+            self.move_to_waiting_state()
 
-            if progress >= 1.0:
-            # if t + dt >= 1.0
-                self.current_phase = "waving"
-                self.starttime = now  
-                self.get_logger().info("Homing complete. Starting waving motion.")
+        elif self.current_phase == "moving":
+            x, y, z = x_coord, y_coord, z_coord  
+            self.move_to_target(x, y, z)
+            self.current_phase = "waiting"
 
-        # Compute the trajectory.
-        # qd    = [1.0, 2.0, 3.0]
-        elif self.current_phase == "waving":
-            qd = [0.0, 0.2 * np.sin(2 * np.pi * 0.1 * t), 0.5 * np.sin(2 * np.pi * 0.5 * t)]
-            qddot = [0.0, 0.0, 0.0]
 
-            # Send.
-            self.sendcmd(qd, qddot)
+    # # Timer (100Hz) update.
+    # def update(self):
+    #     # Grab the current time.
+    #     now = self.get_clock().now()
+    #     t   = (now - self.starttime).nanoseconds * 1e-9
+
+    #     if self.current_phase == "homing":
+    #         progress = min(t / self.homing_time, 1.0)  
+    #         qd = [(1 - progress) * p0 for p0 in self.position0]
+    #         qddot = [0.0, 0.0, 0.0]
+    #         self.sendcmd(qd, qddot)
+
+    #         # code to use the quintic spline instead of linear interpolation
+    #         # T = self.homing_time
+    #         # qd, qddot, qddotdot = self.quintic_spline(self.position0, [0.0, 0.0, 0.0], T, t)
+    #         # self.sendcmd(qd, qddot)
+
+    #         if progress >= 1.0:
+    #         # if t + dt >= 1.0
+    #             self.current_phase = "waving"
+    #             self.starttime = now  
+    #             self.get_logger().info("Homing complete. Starting waving motion.")
+
+    #     # Compute the trajectory.
+    #     # qd    = [1.0, 2.0, 3.0]
+    #     elif self.current_phase == "waving":
+    #         qd = [0.0, 0.2 * np.sin(2 * np.pi * 0.1 * t), 0.5 * np.sin(2 * np.pi * 0.5 * t)]
+    #         qddot = [0.0, 0.0, 0.0]
+
+    #         # Send.
+    #         self.sendcmd(qd, qddot)
 
 
 #
