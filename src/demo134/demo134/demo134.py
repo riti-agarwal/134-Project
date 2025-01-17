@@ -47,6 +47,7 @@ class DemoNode(Node):
         # Create a timer to keep calculating/sending commands.
         rate           = RATE
         self.current_phase = "homing"
+        self.last_joint_positions = self.position0
         # self.homing_time = 2.0
         # self.homed = False
         self.starttime = self.get_clock().now()
@@ -91,10 +92,14 @@ class DemoNode(Node):
     ######################################################################
     # Handlers
     # Receive feedback - called repeatedly by incoming messages.
+    # def recvfbk(self, fbkmsg):
+    #     # Just print the position (for now).
+    #     # print(list(fbkmsg.position))
+    #     pass
+
     def recvfbk(self, fbkmsg):
-        # Just print the position (for now).
-        # print(list(fbkmsg.position))
-        pass
+        """Update the last known joint positions from feedback."""
+        self.last_joint_positions = list(fbkmsg.position)
 
     def ikin(self, x, y, z):
         """Compute joint angles from cartesian coordinates"""
@@ -126,11 +131,14 @@ class DemoNode(Node):
             pos, vel, _ = self.quintic_spline(q_start, q_end, duration, elapsed)
             self.sendcmd(pos, vel)
             rclpy.spin_once(self)
+            
+        # Update last known positions - not sure whether to do here or in the update function
+        self.last_joint_positions = q_end
 
     def move_to_waiting_state(self):
         # TODO
         """Move robot to the waiting state using quintic spline."""
-        current_pos = [0.0, 0.0, 0.0]  # get last computed join angles or get current joint angles
+        current_pos = self.last_joint_positions  
         waiting_pos = [0.0, 0.0, np.pi / 2]  # We should change this once we know the exact position of our waiting state
         self.move_with_spline(current_pos, waiting_pos, 2.0)  # 2-second duration
 
@@ -168,11 +176,10 @@ class DemoNode(Node):
         """Move robot to a target point on the table using quintic spline."""
         try:
             joint_angles = self.ikin(x, y, z)
-
-            # Step 1: Move upper arm vertical
-            # TODO
-            intermediate_angles = [0.0, 0.0, 0.0]  # We need to change the third motor angles so that it matches the current / last given angle. 
-            self.move_with_spline([0.0, 0.0, 0.0], intermediate_angles, 2.0)
+            
+            # Step 1: Move upper arm vertical, keep other joints as they are
+            intermediate_angles = [self.last_joint_positions[0], 0.0, self.last_joint_positions[2]]
+            self.move_with_spline(self.last_joint_positions, intermediate_angles, 2.0)
 
             # Step 2: Move to the target
             self.move_with_spline(intermediate_angles, joint_angles, 2.0)
