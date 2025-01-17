@@ -171,7 +171,7 @@ class DemoNode(Node):
 
             # Step 1: Move upper arm vertical
             # TODO
-            intermediate_angles = [joint_angles[0], 0.0, 0.0]  # We need to change the third motor angles so that it matches the current / last given angle. 
+            intermediate_angles = [0.0, 0.0, 0.0]  # We need to change the third motor angles so that it matches the current / last given angle. 
             self.move_with_spline([0.0, 0.0, 0.0], intermediate_angles, 2.0)
 
             # Step 2: Move to the target
