@@ -136,11 +136,16 @@ class DemoNode(Node):
         self.last_joint_positions = q_end
 
     def move_to_waiting_state(self):
-        # TODO
+        # TODO: find fixed waiting pos. 
         """Move robot to the waiting state using quintic spline."""
         current_pos = self.last_joint_positions  
+        # Step 1: Move upper arm vertical
+        intermediate_pos = [current_pos[0], 0.0, current_pos[2]]
+        self.move_with_spline(current_pos, intermediate_pos, 2.0)
+
+        # Step 2: Move pointer to default waiting position
         waiting_pos = [0.0, 0.0, np.pi / 2]  # We should change this once we know the exact position of our waiting state
-        self.move_with_spline(current_pos, waiting_pos, 2.0)  # 2-second duration
+        self.move_with_spline(intermediate_pos, waiting_pos, 2.0)  
 
     def quintic_spline(self, q0, qT, T, t):
         """
@@ -172,22 +177,17 @@ class DemoNode(Node):
         return positions, velocities, accelerations
 
     def move_to_target(self, x, y, z):
-        # TODO: Fix Step 1: We move from the current position to the intermediate angle right? When are we ever at 0, 0, 0?
-        """Move robot to a target point on the table using quintic spline."""
+        """Move robot to a target point on the table directly using quintic spline."""
         try:
             joint_angles = self.ikin(x, y, z)
-            
-            # Step 1: Move upper arm vertical, keep other joints as they are
-            intermediate_angles = [self.last_joint_positions[0], 0.0, self.last_joint_positions[2]]
-            self.move_with_spline(self.last_joint_positions, intermediate_angles, 2.0)
-
-            # Step 2: Move to the target
-            self.move_with_spline(intermediate_angles, joint_angles, 2.0)
+            # Move directly to the target - to move to target we do not need a 2 step process. 
+            self.move_with_spline(self.last_joint_positions, joint_angles, 2.0)
         except ValueError as e:
             self.get_logger().error(str(e))
 
     def update(self, x_coord, y_coord, z_coord=0):
         """Main update loop."""
+        # TODO: set up a way to move between the states - decide on logic on how to move between the states.
         if self.current_phase == "waiting":
             self.move_to_waiting_state()
 
