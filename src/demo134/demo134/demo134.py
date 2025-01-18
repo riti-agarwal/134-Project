@@ -185,15 +185,20 @@ class DemoNode(Node):
         except ValueError as e:
             self.get_logger().error(str(e))
 
-    def update(self, x_coord, y_coord, z_coord=0):
+    def update(self):
         """Main update loop."""
         # TODO: set up a way to move between the states - decide on logic on how to move between the states.
-        if self.current_phase == "waiting":
+        if self.current_phase == "startup":
             self.move_to_waiting_state()
+            self.current_phase = "moving"
 
         elif self.current_phase == "moving":
-            x, y, z = x_coord, y_coord, z_coord  
+            x, y, z = 0.3, 0.2, 0.0  # Target point hardcoded for now
             self.move_to_target(x, y, z)
+            self.current_phase = "returning"
+
+        elif self.current_phase == "returning":
+            self.move_to_waiting_state()
             self.current_phase = "waiting"
 
 
