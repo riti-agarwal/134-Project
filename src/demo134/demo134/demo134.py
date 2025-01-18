@@ -260,6 +260,7 @@ import rclpy
 
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
+from geometry_msgs.msg import Point 
 
 from ikpy.chain import Chain
 import ikpy
@@ -272,7 +273,10 @@ class DemoNode(Node):
         super().__init__(name)
 
         # self.robot_chain = Chain.from_urdf_file("src/threedof/threedof/urdf/threedofexample.urdf", base_elements=["world"])
-
+        self.point_queue = []
+        self.pointsub = self.create_subscription(
+            Point, '/point', self.recvpoint, 10)
+        self.current_target = None
         # Create a temporary subscriber to grab the initial position.
         self.position0 = self.grabfbk()
         self.get_logger().info("Initial positions: %r" % self.position0)
@@ -293,7 +297,7 @@ class DemoNode(Node):
 
         # Create a timer to keep calculating/sending commands.
         rate           = RATE
-        self.current_phase = "waiting"
+        self.current_phase = "startup"
         self.last_joint_positions = self.position0
         self.homing_time = 2.0
         # self.homed = False
@@ -315,6 +319,13 @@ class DemoNode(Node):
         position = a0 + a1*t + a2*t**2 + a3*t**3 + a4*t**4 + a5*t**5
         velocity = a1 + 2*a2*t + 3*a3*t**2 + 4*a4*t**3 + 5*a5*t**4
         return position, velocity
+    
+    def recvpoint(self, pointmsg):
+        # Extract coordinates from message and enqueue them
+        point = (pointmsg.x, pointmsg.y, pointmsg.z)
+        self.point_queue.append(point)
+        self.get_logger().info(f"Received point: {point}")
+
     
     def grabfbk(self):
         # Create a temporary handler to grab the position.
@@ -417,14 +428,33 @@ class DemoNode(Node):
         self.get_logger().info("Reached waiting position.")
 
     def update(self):
-        if self.current_phase == "waiting":
+        if self.current_phase == "startup":
             self.move_to_waiting_position()
-            self.current_phase = "moving"
+            self.current_phase = "waiting"
+                    
+        elif self.current_phase == "waiting":
+            # Only start moving if there is a new point in the queue
+            if self.point_queue:
+                # Dequeue next point and transition to moving phase
+                self.current_target = self.point_queue.pop(0)
+                self.current_phase = "moving"
+            # If no new points, remain in waiting phase without action
 
         elif self.current_phase == "moving":
-            x, y, z = 0.3, 0.2, 0.0  # Target point hardcoded for now
-            q_target = self.cartesian_to_joint_space(x, y, z)
-            # self.move_with_spline(self.q_current, [np.pi, np.pi/2, 0.0], 2.0)
+            # x, y, z = 0.3, 0.2, 0.0  # Target point hardcoded for now
+            # q_target = self.cartesian_to_joint_space(x, y, z)
+            # # self.move_with_spline(self.q_current, [np.pi, np.pi/2, 0.0], 2.0)
+            # self.move_with_spline(self.q_current, q_target, 2.0)
+            # self.current_phase = "returning"
+            x, y, z = self.current_target
+            try:
+                q_target = self.cartesian_to_joint_space(x, y, z)
+            except ValueError:
+                # Skip unreachable point and return to waiting phase
+                self.get_logger().info("Target unreachable, skipping this point.")
+                self.current_phase = "waiting"
+                return
+
             self.move_with_spline(self.q_current, q_target, 2.0)
             self.current_phase = "returning"
 
