@@ -130,7 +130,7 @@
   <joint name="elbow" type="continuous">
     <parent link="elbowmotor"/>
     <child  link="lowerarm"/>
-    <origin xyz="0.0 0.0 0.0308" rpy="0 0 3.1415"/>
+    <origin xyz="0.01875 0.0 0.0308" rpy="0 0 3.1415"/>
     <axis   xyz="0 0 1"/>
   </joint>
 
