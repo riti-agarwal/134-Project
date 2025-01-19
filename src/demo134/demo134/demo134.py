@@ -255,15 +255,241 @@
 # if __name__ == "__main__":
 #     main()
 
+
+""" Working code """
+# import numpy as np
+# import rclpy
+
+# from rclpy.node import Node
+# from sensor_msgs.msg import JointState
+# from geometry_msgs.msg import Point 
+
+# from ikpy.chain import Chain
+# import ikpy
+
+# RATE = 100.0  # Hertz
+
+# class DemoNode(Node):
+#     def __init__(self, name):
+#         # Initialize the node, naming it as specified
+#         super().__init__(name)
+
+#         # self.robot_chain = Chain.from_urdf_file("src/threedof/threedof/urdf/threedofexample.urdf", base_elements=["world"])
+#         self.point_queue = []
+#         self.pointsub = self.create_subscription(
+#             Point, '/point', self.recvpoint, 10)
+#         self.current_target = None
+#         # Create a temporary subscriber to grab the initial position.
+#         self.position0 = self.grabfbk()
+#         self.get_logger().info("Initial positions: %r" % self.position0)
+
+#         # Create a message and publisher to send the joint commands.
+#         self.cmdmsg = JointState()
+#         self.cmdpub = self.create_publisher(JointState, '/joint_commands', 10)
+
+#         # Wait for a connection to happen.  This isn't necessary, but
+#         # means we don't start until the rest of the system is ready.
+#         self.get_logger().info("Waiting for a /joint_commands subscriber...")
+#         while(not self.count_subscribers('/joint_commands')):
+#             pass
+
+#         # Create a subscriber to continually receive joint state messages.
+#         self.fbksub = self.create_subscription(
+#             JointState, '/joint_states', self.recvfbk, 10)
+
+#         # Create a timer to keep calculating/sending commands.
+#         rate           = RATE
+#         self.current_phase = "startup"
+#         self.last_joint_positions = self.position0
+#         self.homing_time = 2.0
+#         # self.homed = False
+#         self.starttime = self.get_clock().now()
+#         self.timer     = self.create_timer(1/rate, self.update)
+#         self.get_logger().info("Sending commands with dt of %f seconds (%fHz)" %
+#                                (self.timer.timer_period_ns * 1e-9, rate))
+#         self.q_current = self.position0
+
+#     def quintic_spline(self, q0, qT, T, t):
+#         """Compute position and velocity for a scalar value using a quintic spline."""
+#         a0 = q0
+#         a1 = 0.0
+#         a2 = 0.0
+#         a3 = (10*(qT - q0)) / (T**3)
+#         a4 = (-15*(qT - q0)) / (T**4)
+#         a5 = (6*(qT - q0)) / (T**5)
+
+#         position = a0 + a1*t + a2*t**2 + a3*t**3 + a4*t**4 + a5*t**5
+#         velocity = a1 + 2*a2*t + 3*a3*t**2 + 4*a4*t**3 + 5*a5*t**4
+#         return position, velocity
+    
+#     def recvpoint(self, pointmsg):
+#         # Extract coordinates from message and enqueue them
+#         point = (pointmsg.x, pointmsg.y, pointmsg.z)
+#         self.point_queue.append(point)
+#         self.get_logger().info(f"Received point: {point}")
+
+    
+#     def grabfbk(self):
+#         # Create a temporary handler to grab the position.
+#         def cb(fbkmsg):
+#             self.grabpos   = list(fbkmsg.position)
+#             self.grabready = True
+
+#         # Temporarily subscribe to get just one message.
+#         sub = self.create_subscription(JointState, '/joint_states', cb, 1)
+#         self.grabready = False
+#         while not self.grabready:
+#             rclpy.spin_once(self)
+#         self.destroy_subscription(sub)
+
+#         # Return the values.
+#         return self.grabpos
+    
+#     def recvfbk(self, fbkmsg):
+#         # Save the actual position.
+#         self.actpos = fbkmsg.position
+
+#     def cartesian_to_joint_space(self, x, y, z):
+#         # Link lengths (assumed from URDF for simplification)
+#         L1 = 0.385  # shoulder to elbow length
+#         L2 = 0.37   # elbow to tip length
+
+#         # Compute the base rotation angle (q1) about the z-axis
+#         q1 = np.arctan2(y, x)
+
+#         # Project the target onto the plane defined by the shoulder and elbow after base rotation
+#         r = np.sqrt(x**2 + y**2)  # horizontal distance from base axis to target
+
+#         # Using planar 2R arm inverse kinematics in the plane defined by (r, z)
+#         # Compute intermediate value for elbow angle calculation using the law of cosines
+#         D = (r**2 + z**2 - L1**2 - L2**2) / (2 * L1 * L2)
+
+#         # Check if the target is reachable
+#         if abs(D) > 1:
+#             raise ValueError("Target is unreachable with the given arm configuration.")
+
+#         # Elbow joint angle (q3) solution (elbow-up configuration assumed)
+#         q3 = np.arccos(D)
+
+#         # Compute the angle from the horizontal to the line connecting shoulder to target
+#         phi = np.arctan2(z, r)
+
+#         # Angle between link L1 and the line from shoulder to target
+#         psi = np.arctan2(L2 * np.sin(q3), L1 + L2 * np.cos(q3))
+
+#         # Shoulder joint angle (q2)
+#         q2 = phi - psi
+
+#         return [q1, q2, q3]
+
+#     def move_with_spline(self, q_start, q_goal, duration):
+#         """Moves joints from q_start to q_goal over the given duration using a quintic spline."""
+#         start_time = self.get_clock().now()
+#         rate = self.create_rate(RATE)
+
+#         while rclpy.ok():
+#             # Calculate elapsed time
+#             now = self.get_clock().now()
+#             elapsed = (now - start_time).nanoseconds * 1e-9
+
+#             # Clamp elapsed time to duration
+#             t = min(elapsed, duration)
+
+#             # Compute new positions and velocities for each joint
+#             positions = []
+#             velocities = []
+#             for q0, qT in zip(q_start, q_goal):
+#                 p, v = self.quintic_spline(q0, qT, duration, t)
+#                 positions.append(p)
+#                 velocities.append(v)
+
+#             # Send command
+#             self.sendcmd(positions, velocities)
+
+#             # Break loop if motion complete
+#             if t >= duration:
+#                 self.sendcmd(positions, [0.0]*len(velocities))
+#                 self.q_current = q_goal  # Update current joint state
+#                 break
+
+#     def sendcmd(self, positions, velocities):
+#         """Sends joint commands."""
+#         self.cmdmsg.header.stamp = self.get_clock().now().to_msg()
+#         self.cmdmsg.name = ['base', 'shoulder', 'elbow']  # Adjust joint names if necessary
+#         self.cmdmsg.position = positions
+#         self.cmdmsg.velocity = velocities
+#         self.cmdpub.publish(self.cmdmsg)
+
+#     def move_to_waiting_position(self):
+#         """Directly move robot joints to the waiting position using a spline."""
+#         duration = 2.0
+#         intermediate_pos = [self.q_current[0], 0.0, self.q_current[2]]
+#         self.move_with_spline(self.q_current, intermediate_pos, duration)
+#         waiting_position = [np.pi/2, 0.0, np.pi/2]  
+#         self.move_with_spline(self.q_current, waiting_position, duration)
+#         self.get_logger().info("Reached waiting position.")
+
+#     def update(self):
+#         if self.current_phase == "startup":
+#             self.move_to_waiting_position()
+#             self.current_phase = "waiting"
+                    
+#         elif self.current_phase == "waiting":
+#             # Only start moving if there is a new point in the queue
+#             if self.point_queue:
+#                 # Dequeue next point and transition to moving phase
+#                 self.current_target = self.point_queue.pop(0)
+#                 self.current_phase = "moving"
+#             # If no new points, remain in waiting phase without action
+
+#         elif self.current_phase == "moving":
+#             # x, y, z = 0.3, 0.2, 0.0  # Target point hardcoded for now
+#             # q_target = self.cartesian_to_joint_space(x, y, z)
+#             # # self.move_with_spline(self.q_current, [np.pi, np.pi/2, 0.0], 2.0)
+#             # self.move_with_spline(self.q_current, q_target, 2.0)
+#             # self.current_phase = "returning"
+#             x, y, z = self.current_target
+#             try:
+#                 q_target = self.cartesian_to_joint_space(x, y, z)
+#             except ValueError:
+#                 # Skip unreachable point and return to waiting phase
+#                 self.get_logger().info("Target unreachable, skipping this point.")
+#                 self.current_phase = "waiting"
+#                 return
+
+#             self.move_with_spline(self.q_current, q_target, 2.0)
+#             self.current_phase = "returning"
+
+#         elif self.current_phase == "returning":
+#             self.move_to_waiting_position()
+#             self.current_phase = "waiting"
+
+# def main(args=None):
+#     rclpy.init(args=args)
+#     node = DemoNode('demo')
+#     try:
+#         rclpy.spin(node)  # Keeps spinning until shutdown is requested
+#     except KeyboardInterrupt:
+#         pass
+#     finally:
+#         node.destroy_node()
+#         rclpy.shutdown()
+
+# if __name__ == "__main__":
+#     main()
+
+
+"""Code to try using kinematic chain"""
 import numpy as np
 import rclpy
 
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import Point 
+from geometry_msgs.msg import Point
 
-from ikpy.chain import Chain
-import ikpy
+# KinematicChain import
+from KinematicChain import KinematicChain
+from KinematicChain import JointType  # might not be used directly, but for reference
 
 RATE = 100.0  # Hertz
 
@@ -272,12 +498,35 @@ class DemoNode(Node):
         # Initialize the node, naming it as specified
         super().__init__(name)
 
-        # self.robot_chain = Chain.from_urdf_file("src/threedof/threedof/urdf/threedofexample.urdf", base_elements=["world"])
+        # Initialize the Kinematic Chain
+        # ---------------------------------------------------------
+        # Adjust the baseframe and tipframe to match your URDF 
+        # as needed. The final list is the expected active joint names 
+        # in correct order (the same names used in your URDF).
+        # ---------------------------------------------------------
+        base_frame = "world"
+        tip_frame  = "tip"  # or whatever your URDF calls the last link
+        expected_joint_names = ["base", "shoulder", "elbow"]
+        self.chain = KinematicChain(
+            node=self,
+            baseframe=base_frame,
+            tipframe=tip_frame,
+            expectedjointnames=expected_joint_names
+        )
+        # Gain for IK solver
+        self.lam = 20.0  
+
+        # For storing the actual position & for printing
+        self.actpos = [0.0, 0.0, 0.0]
+
+        # Subscribe to the point (Cartesian target) messages
         self.point_queue = []
         self.pointsub = self.create_subscription(
             Point, '/point', self.recvpoint, 10)
+
         self.current_target = None
-        # Create a temporary subscriber to grab the initial position.
+
+        # Grab the initial joint positions
         self.position0 = self.grabfbk()
         self.get_logger().info("Initial positions: %r" % self.position0)
 
@@ -286,7 +535,7 @@ class DemoNode(Node):
         self.cmdpub = self.create_publisher(JointState, '/joint_commands', 10)
 
         # Wait for a connection to happen.  This isn't necessary, but
-        # means we don't start until the rest of the system is ready.
+        # it means we don't start until the rest of the system is ready.
         self.get_logger().info("Waiting for a /joint_commands subscriber...")
         while(not self.count_subscribers('/joint_commands')):
             pass
@@ -295,167 +544,197 @@ class DemoNode(Node):
         self.fbksub = self.create_subscription(
             JointState, '/joint_states', self.recvfbk, 10)
 
-        # Create a timer to keep calculating/sending commands.
-        rate           = RATE
+        # Set up our timer for the main control loop
         self.current_phase = "startup"
-        self.last_joint_positions = self.position0
-        self.homing_time = 2.0
-        # self.homed = False
-        self.starttime = self.get_clock().now()
-        self.timer     = self.create_timer(1/rate, self.update)
-        self.get_logger().info("Sending commands with dt of %f seconds (%fHz)" %
-                               (self.timer.timer_period_ns * 1e-9, rate))
-        self.q_current = self.position0
+        self.q_current     = self.position0
+        self.starttime     = self.get_clock().now()
+        self.timer         = self.create_timer(1.0/RATE, self.update)
 
-    def quintic_spline(self, q0, qT, T, t):
-        """Compute position and velocity for a scalar value using a quintic spline."""
-        a0 = q0
-        a1 = 0.0
-        a2 = 0.0
-        a3 = (10*(qT - q0)) / (T**3)
-        a4 = (-15*(qT - q0)) / (T**4)
-        a5 = (6*(qT - q0)) / (T**5)
+        self.get_logger().info("Sending commands at %f Hz" % RATE)
 
-        position = a0 + a1*t + a2*t**2 + a3*t**3 + a4*t**4 + a5*t**5
-        velocity = a1 + 2*a2*t + 3*a3*t**2 + 4*a4*t**3 + 5*a5*t**4
-        return position, velocity
-    
     def recvpoint(self, pointmsg):
-        # Extract coordinates from message and enqueue them
+        """Receive a Cartesian target point and enqueue it."""
         point = (pointmsg.x, pointmsg.y, pointmsg.z)
         self.point_queue.append(point)
         self.get_logger().info(f"Received point: {point}")
 
-    
     def grabfbk(self):
-        # Create a temporary handler to grab the position.
+        """Grab one set of feedback from the '/joint_states' topic (blocking)."""
         def cb(fbkmsg):
             self.grabpos   = list(fbkmsg.position)
             self.grabready = True
 
-        # Temporarily subscribe to get just one message.
         sub = self.create_subscription(JointState, '/joint_states', cb, 1)
         self.grabready = False
         while not self.grabready:
             rclpy.spin_once(self)
         self.destroy_subscription(sub)
 
-        # Return the values.
         return self.grabpos
-    
+
     def recvfbk(self, fbkmsg):
-        # Save the actual position.
-        self.actpos = fbkmsg.position
+        """Callback to continually receive feedback from '/joint_states'."""
+        self.actpos = list(fbkmsg.position)
 
-    def cartesian_to_joint_space(self, x, y, z):
-        # Link lengths (assumed from URDF for simplification)
-        L1 = 0.385  # shoulder to elbow length
-        L2 = 0.37   # elbow to tip length
+    def sendcmd(self, positions, velocities):
+        """Sends joint commands."""
+        self.cmdmsg.header.stamp = self.get_clock().now().to_msg()
+        # Make sure the joint names match your URDF joints:
+        self.cmdmsg.name     = ['base', 'shoulder', 'elbow']
+        self.cmdmsg.position = positions
+        self.cmdmsg.velocity = velocities
+        self.cmdpub.publish(self.cmdmsg)
 
-        # Compute the base rotation angle (q1) about the z-axis
-        q1 = np.arctan2(y, x)
+    #
+    # Quintic spline for an entire multi-joint segment
+    #
+    def quintic_spline(self, q0, qT, T, t):
+        """
+        Compute array of positions and velocities for each DOF 
+        using a quintic polynomial between q0 and qT. 
+        q0, qT are arrays of the same length.
+        """
+        # Make sure q0, qT are arrays
+        q0 = np.array(q0)
+        qT = np.array(qT)
+        positions = []
+        velocities = []
+        for i in range(len(q0)):
+            # For each DOF, compute the quintic
+            a0 = q0[i]
+            a1 = 0.0
+            a2 = 0.0
+            a3 = (10*(qT[i] - q0[i])) / (T**3)
+            a4 = (-15*(qT[i] - q0[i])) / (T**4)
+            a5 = (6*(qT[i] - q0[i])) / (T**5)
 
-        # Project the target onto the plane defined by the shoulder and elbow after base rotation
-        r = np.sqrt(x**2 + y**2)  # horizontal distance from base axis to target
+            p = a0 + a1*t + a2*(t**2) + a3*(t**3) + a4*(t**4) + a5*(t**5)
+            v = a1 + 2*a2*t + 3*a3*(t**2) + 4*a4*(t**3) + 5*a5*(t**4)
 
-        # Using planar 2R arm inverse kinematics in the plane defined by (r, z)
-        # Compute intermediate value for elbow angle calculation using the law of cosines
-        D = (r**2 + z**2 - L1**2 - L2**2) / (2 * L1 * L2)
+            positions.append(p)
+            velocities.append(v)
 
-        # Check if the target is reachable
-        if abs(D) > 1:
-            raise ValueError("Target is unreachable with the given arm configuration.")
+        return positions, velocities
 
-        # Elbow joint angle (q3) solution (elbow-up configuration assumed)
-        q3 = np.arccos(D)
+    #
+    # Use the KinematicChain object to solve for joint angles
+    # that bring the tip to a desired Cartesian location [x, y, z].
+    #
+    def cartesian_to_joint_space_ik(self, x, y, z, q_init=None, tol=1e-3, max_iter=100):
+        """
+        Simple numerical IK solver ignoring orientation:
+          - p_des = [x, y, z]
+          - Start from q_init (if None, use self.q_current)
+          - Use chain.fkin(q) to get (ptip, Rtip, Jv, Jw).
+          - Update q with: q <- q + lam * pinv(Jv) * (p_des - ptip).
+          - Stop if norm(p_des - ptip) < tol or iteration count reached.
+        """
+        p_des = np.array([x, y, z])
 
-        # Compute the angle from the horizontal to the line connecting shoulder to target
-        phi = np.arctan2(z, r)
+        if q_init is None:
+            q = np.array(self.q_current, dtype=float)
+        else:
+            q = np.array(q_init, dtype=float)
 
-        # Angle between link L1 and the line from shoulder to target
-        psi = np.arctan2(L2 * np.sin(q3), L1 + L2 * np.cos(q3))
+        for _ in range(max_iter):
+            # Forward kinematics
+            ptip, Rtip, Jv, Jw = self.chain.fkin(q)
+            ptip = np.array(ptip)
 
-        # Shoulder joint angle (q2)
-        q2 = phi - psi
+            # Position error
+            e = p_des - ptip
+            err_norm = np.linalg.norm(e)
 
-        return [q1, q2, q3]
+            if err_norm < tol:
+                break
 
+            # Compute pseudo-inverse of Jv
+            # If your manipulator is 3-DOF and you only care about x,y,z,
+            # Jv is 3x3. We can invert or use np.linalg.pinv:
+            Jv_pinv = np.linalg.pinv(Jv)  
+
+            # Update rule
+            dq = self.lam * (Jv_pinv @ e)
+            q  = q + dq
+
+        # Return final q
+        return list(q)
+
+    #
+    # Move from current q to a new q over "duration" seconds via quintic splines
+    #
     def move_with_spline(self, q_start, q_goal, duration):
-        """Moves joints from q_start to q_goal over the given duration using a quintic spline."""
+        """Moves joints from q_start to q_goal over the given duration."""
         start_time = self.get_clock().now()
-        rate = self.create_rate(RATE)
 
         while rclpy.ok():
-            # Calculate elapsed time
-            now = self.get_clock().now()
+            now     = self.get_clock().now()
             elapsed = (now - start_time).nanoseconds * 1e-9
 
             # Clamp elapsed time to duration
             t = min(elapsed, duration)
 
-            # Compute new positions and velocities for each joint
-            positions = []
-            velocities = []
-            for q0, qT in zip(q_start, q_goal):
-                p, v = self.quintic_spline(q0, qT, duration, t)
-                positions.append(p)
-                velocities.append(v)
+            # Compute new positions and velocities
+            positions, velocities = self.quintic_spline(q_start, q_goal, duration, t)
 
-            # Send command
+            # Send the command
             self.sendcmd(positions, velocities)
 
             # Break loop if motion complete
             if t >= duration:
+                # Once done, send zero velocity to hold final position
                 self.sendcmd(positions, [0.0]*len(velocities))
-                self.q_current = q_goal  # Update current joint state
+                self.q_current = q_goal  # Update internal "current" config
                 break
 
-    def sendcmd(self, positions, velocities):
-        """Sends joint commands."""
-        self.cmdmsg.header.stamp = self.get_clock().now().to_msg()
-        self.cmdmsg.name = ['base', 'shoulder', 'elbow']  # Adjust joint names if necessary
-        self.cmdmsg.position = positions
-        self.cmdmsg.velocity = velocities
-        self.cmdpub.publish(self.cmdmsg)
-
+    #
+    # Move to a "waiting position"
+    #
     def move_to_waiting_position(self):
-        """Directly move robot joints to the waiting position using a spline."""
         duration = 2.0
+        # Example: intermediate then final:
         intermediate_pos = [self.q_current[0], 0.0, self.q_current[2]]
         self.move_with_spline(self.q_current, intermediate_pos, duration)
-        waiting_position = [np.pi/2, 0.0, np.pi/2]  
-        self.move_with_spline(self.q_current, waiting_position, duration)
+
+        # Example waiting position
+        waiting_position = [np.pi/2, 0.0, np.pi/2]
+        self.move_with_spline(intermediate_pos, waiting_position, duration)
+
         self.get_logger().info("Reached waiting position.")
 
+    #
+    # Main update step
+    #
     def update(self):
         if self.current_phase == "startup":
+            # Move from wherever we are to a "waiting" posture
             self.move_to_waiting_position()
             self.current_phase = "waiting"
-                    
+
         elif self.current_phase == "waiting":
-            # Only start moving if there is a new point in the queue
+            # Only move if there's a new point
             if self.point_queue:
-                # Dequeue next point and transition to moving phase
                 self.current_target = self.point_queue.pop(0)
-                self.current_phase = "moving"
-            # If no new points, remain in waiting phase without action
+                self.current_phase  = "moving"
+            else:
+                # No new target, do nothing
+                pass
 
         elif self.current_phase == "moving":
-            # x, y, z = 0.3, 0.2, 0.0  # Target point hardcoded for now
-            # q_target = self.cartesian_to_joint_space(x, y, z)
-            # # self.move_with_spline(self.q_current, [np.pi, np.pi/2, 0.0], 2.0)
-            # self.move_with_spline(self.q_current, q_target, 2.0)
-            # self.current_phase = "returning"
             x, y, z = self.current_target
+            # Solve IK numerically via chain
             try:
-                q_target = self.cartesian_to_joint_space(x, y, z)
-            except ValueError:
-                # Skip unreachable point and return to waiting phase
-                self.get_logger().info("Target unreachable, skipping this point.")
+                q_target = self.cartesian_to_joint_space_ik(x, y, z)
+            except np.linalg.LinAlgError:
+                self.get_logger().info("Numerical error in IK. Skipping target.")
                 self.current_phase = "waiting"
                 return
 
+            # (Optionally check if solution is 'too large', etc.)
+
+            # Now move to the solution
             self.move_with_spline(self.q_current, q_target, 2.0)
+
             self.current_phase = "returning"
 
         elif self.current_phase == "returning":
@@ -475,3 +754,4 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+
